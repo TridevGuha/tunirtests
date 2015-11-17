@@ -146,5 +146,38 @@ class TunirNonGatingtestfile(unittest.TestCase):
         """Deletes the symlink created for test"""
         os.remove('/tmp/p_file_link_test')
 
+class TunirNonGatingtestrsync(unittest.TestCase):
+    def setUp(self):
+        """create settings to run test"""
+        with open('/var/tmp/rsync/rsync-test', 'w') as FILE:
+            FILE.write('Testing rsync')
+
+    def test_rsync(self):
+        #Installing rsync
+        out, err, eid = system('rsync --version')
+        out = out.decode('utf-8')
+        err = err.decode('utf-8')
+        self.assertIn(out, 'rsync', out+err)
+
+        testpath2file = '/var/tmp/rsync'
+        testrsyncfile = '/var/tmp/rsync/rsync-test'
+
+        # Fix SELinux
+        out, err, eid = system('chcon -R -t public_content_t %s' % testpath2file)
+        out = out.decode('utf-8')
+        err = err.decode('utf-8')
+        self.assertEqual(eid, 0, out+err)
+
+        # Trying to rsync
+        out, err, eid = system('rsync --recursive --verbose --include= %s --exclude=* rsync://127.0.0.1/centos-test /var/log/' % testrsyncfile)
+        out = out.decode('utf-8')
+        err = err.decode('utf-8')
+        self.assertEqual(eid, 0, out+err)
+
+    def tearDown(self):
+        # Reverting changes
+        os.remove('/var/tmp/rsync/rsync-test')
+        os.remove('/var/log/rsync-test')
+
 if __name__ == '__main__':
     unittest.main()
